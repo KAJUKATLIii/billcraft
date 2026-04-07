@@ -65,7 +65,7 @@
 3. **Configure Connection**
    - Open `connection.php` and update your database credentials:
    ```php
-   $con = mysqli_connect("localhost", "your_username", "your_password", "water-managment");
+   $con = mysqli_connect("localhost", "your_username", "your_password", "billcraft");
    ```
 
 4. **Run Application**
@@ -73,6 +73,15 @@
    - Access via `http://localhost/billcraft`
 
 ---
+
+## 🔑 Default Admin Login
+
+| Field     | Value   |
+|----------|--------|
+| Username | admin  |
+| Password | admin  |
+
+> ⚠️ **Security Notice:** Please change the default credentials after first login to prevent unauthorized access.
 
 ## 🔒 Security Note
 
