@@ -74,6 +74,15 @@
 
 ---
 
+## 🔑 Default Admin Login
+
+| Field     | Value   |
+|----------|--------|
+| Username | admin  |
+| Password | admin  |
+
+> ⚠️ **Security Notice:** Please change the default credentials after first login to prevent unauthorized access.
+
 ## 🔒 Security Note
 
 All database interactions use **Prepared Statements** to prevent SQL injection. Authentication is handled via secure session management and Bcrypt password hashing.
