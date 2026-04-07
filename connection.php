@@ -4,7 +4,7 @@ error_reporting(0);
 $servername = "127.0.0.1";
 $username = "root";
 $password = "";
-$dbname = "water";
+$dbname = "billcraft";
 
 // Create connection
 $con = new mysqli($servername, $username, $password, $dbname);
