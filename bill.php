@@ -20,7 +20,10 @@ $result = $con->query("SELECT
     products.product_price,
     orders.date,
     orders.payment_status,
-    orders.total
+    orders.tax_percent,
+    orders.tax_amount,
+    orders.total,
+    orders_product.price_at_sale
 FROM
     `orders_product`,
     customer,
@@ -42,6 +45,8 @@ $customer_name  = $rows['customer_name'];
 $customer_phone = $rows['customer_phone'];
 $payment_status = $rows['payment_status'];
 $order_date     = $rows['date'];
+$tax_percent    = $rows['tax_percent'];
+$tax_amount     = $rows['tax_amount'];
 $order_total    = $rows['total'];
 mysqli_data_seek($result, 0);
 
@@ -588,12 +593,13 @@ if (file_exists($logo_path)) {
             </thead>
             <tbody>
                 <?php
-                $total = 0;
+                $subtotal_sum = 0;
                 $item_no = 0;
                 while ($row = $result->fetch_assoc()) {
                     $item_no++;
-                    $line_total = $row['product_price'] * $row['quantity'];
-                    $total += $line_total;
+                    $price = $row['price_at_sale'];
+                    $line_total = $price * $row['quantity'];
+                    $subtotal_sum += $line_total;
                 ?>
                 <tr>
                     <td>
@@ -603,7 +609,7 @@ if (file_exists($logo_path)) {
                         </div>
                         <div class="item-cat"><?php echo htmlspecialchars($row['product_category']); ?></div>
                     </td>
-                    <td class="text-center td-price">₹<?php echo number_format($row['product_price'], 2); ?></td>
+                    <td class="text-center td-price">₹<?php echo number_format($price, 2); ?></td>
                     <td class="text-center">
                         <span class="qty-badge"><?php echo $row['quantity']; ?></span>
                     </td>
@@ -618,15 +624,15 @@ if (file_exists($logo_path)) {
             <div class="totals-inner">
                 <div class="totals-row">
                     <span class="t-label">Subtotal</span>
-                    <span class="t-val">₹<?php echo number_format($total, 2); ?></span>
+                    <span class="t-val">₹<?php echo number_format($subtotal_sum, 2); ?></span>
                 </div>
                 <div class="totals-row">
-                    <span class="t-label">Tax (0%)</span>
-                    <span class="t-val">₹0.00</span>
+                    <span class="t-label">GST (<?php echo $tax_percent; ?>%)</span>
+                    <span class="t-val">₹<?php echo number_format($tax_amount, 2); ?></span>
                 </div>
                 <div class="totals-grand">
                     <span class="tg-label">Total Amount Due</span>
-                    <span class="tg-value">₹<?php echo number_format($total, 2); ?></span>
+                    <span class="tg-value">₹<?php echo number_format($order_total, 2); ?></span>
                 </div>
             </div>
         </div>
