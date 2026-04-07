@@ -162,7 +162,7 @@ include('includes/header.php');
         </div>
         <div class="sstat" style="border-top: 3px solid hsl(142,71%,45%);">
             <span class="sstat-label">Revenue</span>
-            <span class="sstat-value" style="font-size: 1.4rem;">₹<?php echo number_format($stats['total_revenue'] ?? 0, 0); ?></span>
+            <span class="sstat-value" style="font-size: 1.4rem;">₹<?php echo number_format($stats['total_revenue'] ?? 0, 2); ?></span>
             <i class="fa fa-indian-rupee-sign sstat-icon" style="color: hsl(142,71%,45%);"></i>
         </div>
         <div class="sstat" style="border-top: 3px solid hsl(142,71%,45%);">

@@ -28,34 +28,30 @@
 
             $order_id = $con->insert_id;
             $total = 0;
-            $tax_percent = isset($_GET['tax_percent']) ? (int)$_GET['tax_percent'] : 0;
             
             foreach($selected_product_ids as $pid) {
                 $pid = (int)$pid;
                 $quantity = (int)$all_quantities[$pid];
                 
                 $price_row = $con->query("SELECT product_price, product_stock FROM products WHERE product_id = $pid")->fetch_assoc();
-                $product_price = (float)$price_row['product_price'];
+                $product_price = $price_row['product_price'];
                 $product_stock = $price_row['product_stock'];
                 
                 if($quantity > $product_stock) {
                     throw new Exception("Insufficient stock for product ID: $pid");
                 }
                 
-                $subtotal = $product_price * $quantity;
+                $subtotal = (float)$product_price * $quantity;
                 $total += $subtotal;
 
-                $stmt = $con->prepare("INSERT INTO orders_product (order_id, product_id, quantity, price_at_sale) VALUES (?,?,?,?)");
-                $stmt->bind_param("iiid", $order_id, $pid, $quantity, $product_price);
+                $stmt = $con->prepare("INSERT INTO orders_product (order_id, product_id, quantity) VALUES (?,?,?)");
+                $stmt->bind_param("iii", $order_id, $pid, $quantity);
                 $stmt->execute();
                 
                 $con->query("UPDATE products SET product_stock = product_stock - $quantity WHERE product_id = $pid");
             }
             
-            $tax_amount = $total * ($tax_percent / 100);
-            $grand_total = $total + $tax_amount;
-            
-            $con->query("UPDATE orders SET total = $grand_total, tax_percent = $tax_percent, tax_amount = $tax_amount WHERE order_id = $order_id");
+            $con->query("UPDATE orders SET total = $total WHERE order_id = $order_id");
 
             redirect("bill.php?order_id=".$order_id);
             exit;
@@ -141,29 +137,12 @@
 .osl-total{ font-weight:800; color:var(--text); }
 
 .grand-total-row {
-    margin-top:0px; padding:14px 16px; border-radius:0 0 12px 12px;
+    margin-top:14px; padding:14px 16px; border-radius:12px;
     background: linear-gradient(135deg, hsl(224,50%,8%), hsl(235,45%,14%));
     display:flex; justify-content:space-between; align-items:center;
 }
 .gt-label { color:hsla(210,40%,98%,0.6); font-size:12px; font-weight:600; }
 .gt-val   { color:white; font-size:22px; font-weight:800; letter-spacing:-0.03em; }
-
-.tax-row {
-    padding:8px 16px; border-top:1px solid var(--border);
-    display:flex; justify-content:space-between; align-items:center;
-    background: var(--bg2); font-size:12px; color:var(--text-muted);
-}
-.tax-row b { color: var(--text); }
-
-.tax-selector { display: flex; gap: 6px; margin-top: 8px; }
-.tax-opt {
-    flex: 1; padding: 6px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--surface-solid); cursor: pointer; text-align: center;
-    font-weight: 700; font-size: 11px; transition: all 0.2s ease;
-    color: var(--text-muted);
-}
-.tax-opt input { display: none; }
-.tax-opt.active { border-color: var(--primary); background: hsla(var(--primary-raw),0.1); color: var(--primary); }
 
 .submit-btn {
     width:100%; padding:16px !important; font-size:16px !important; font-weight:800 !important;
@@ -271,42 +250,14 @@
                     <div class="info-block-header"><i class="fa fa-list-check"></i> Order Summary</div>
                     <div class="info-block-body">
                         <ul class="order-summary-lines" id="summary-list">
-                            <li id="empty-summary" style="justify-content:center; color:var(--text-muted); font-size:13px; padding:20px 0;">
-                                <span>No items selected yet</span>
-                            </li>
+                            <!-- Items will be injected here -->
                         </ul>
-                        <div class="grand-total-row" id="grand-total-row" style="display:none; border-radius:12px 12px 0 0; margin-top:14px;">
-                            <span class="gt-label">Subtotal</span>
-                            <span class="gt-val" id="subtotal-display" style="font-size:18px;">₹0.00</span>
+                        <div id="empty-summary" style="display:flex; justify-content:center; color:var(--text-muted); font-size:13px; padding:20px 0;">
+                            <span>No items selected yet</span>
                         </div>
-                        <div class="tax-row" id="tax-info-row" style="display:none;">
-                            <span>GST (<span id="tax-percent-display">0</span>%)</span>
-                            <b id="tax-amount-display">₹0.00</b>
-                        </div>
-                        <div class="grand-total-row" id="grand-total-final-row" style="display:none;">
+                        <div class="grand-total-row" id="grand-total-row" style="display:none;">
                             <span class="gt-label">Grand Total</span>
-                            <span class="gt-val" id="grand-total-display">₹0.00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tax Selector -->
-                <div class="info-block">
-                    <div class="info-block-header"><i class="fa fa-percent"></i> Optional GST</div>
-                    <div class="info-block-body" style="padding-top:10px;">
-                        <div class="tax-selector">
-                            <label class="tax-opt active" onclick="selectTax(0, this)">
-                                <input type="radio" name="tax_percent" value="0" checked> 0%
-                            </label>
-                            <label class="tax-opt" onclick="selectTax(5, this)">
-                                <input type="radio" name="tax_percent" value="5"> 5%
-                            </label>
-                            <label class="tax-opt" onclick="selectTax(12, this)">
-                                <input type="radio" name="tax_percent" value="12"> 12%
-                            </label>
-                            <label class="tax-opt" onclick="selectTax(18, this)">
-                                <input type="radio" name="tax_percent" value="18"> 18%
-                            </label>
+                            <span class="gt-val" id="SALE_GRAND_TOTAL_VALUE">₹0.00</span>
                         </div>
                     </div>
                 </div>
@@ -409,143 +360,150 @@
 </div>
 
 <script>
-    // ─── State ───────────────────────────────────────
-    const selectedItems = {}; // pid -> { name, price, qty }
-
     // ─── Payment Toggle ───────────────────────────────
-    // ─── Tax Selection ───────────────────────────────
-    let currentTaxPercent = 0;
-    function selectTax(percent, el) {
-        document.querySelectorAll('.tax-opt').forEach(opt => opt.classList.remove('active'));
-        el.classList.add('active');
-        el.querySelector('input').checked = true;
-        currentTaxPercent = percent;
-        updateSummary();
-    }
-
+    // ─── Payment Toggle ───────────────────────────────
     function selectStatus(status) {
         const lp = document.getElementById('lbl-pending');
         const lc = document.getElementById('lbl-paid');
         const rp = document.getElementById('r-pending');
         const rc = document.getElementById('r-paid');
+        
         if (status === 'paid') {
-            lp.className = 'pay-option';
-            lc.className = 'pay-option active-paid';
-            rc.checked = true;
+            lp.classList.remove('active-pending');
+            lc.classList.add('active-paid');
+            if (rc) rc.checked = true;
         } else {
-            lp.className = 'pay-option active-pending';
-            lc.className = 'pay-option';
-            rp.checked = true;
+            lp.classList.add('active-pending');
+            lc.classList.remove('active-paid');
+            if (rp) rp.checked = true;
         }
     }
 
-    // ─── Product Checkbox Toggle ──────────────────────
+    // ─── Event Handlers ───────────────────────────────
     function onProductToggle(checkbox) {
-        const pid   = checkbox.dataset.pid;
-        const row   = checkbox.closest('tr');
-        const qty   = document.getElementById('qty-' + pid);
-        const sub   = document.getElementById('sub-' + pid);
-        const price = parseFloat(row.dataset.price);
-        const name  = row.dataset.name;
+        const pid = checkbox.dataset.pid;
+        const row = checkbox.closest('tr');
+        const qtyInp = document.getElementById('qty-' + pid);
 
         if (checkbox.checked) {
-            qty.disabled = false;
-            qty.value = 1;
-            qty.focus();
-            row.classList.add('selected');
-            selectedItems[pid] = { name, price, qty: 1 };
-            sub.textContent = '₹' + price.toFixed(2);
+            if (qtyInp) {
+                qtyInp.disabled = false;
+                if (!qtyInp.value || parseInt(qtyInp.value) <= 0) {
+                    qtyInp.value = 1;
+                }
+            }
+            if (row) row.classList.add('selected');
         } else {
-            qty.disabled = true;
-            qty.value = '';
-            row.classList.remove('selected');
-            delete selectedItems[pid];
-            sub.textContent = '—';
+            if (qtyInp) qtyInp.disabled = true;
+            if (row) row.classList.remove('selected');
         }
         updateSummary();
     }
 
-    // ─── Qty Change ───────────────────────────────────
-    function onQtyChange(pid, price, val, name) {
-        const q = parseInt(val) || 0;
-        const sub = document.getElementById('sub-' + pid);
-        if (q > 0) {
-            selectedItems[pid] = { name, price, qty: q };
-            sub.textContent = '₹' + (price * q).toFixed(2);
-        } else {
-            if (selectedItems[pid]) selectedItems[pid].qty = 0;
-            sub.textContent = '—';
-        }
+    function onQtyChange() {
         updateSummary();
     }
 
-    // ─── Live Summary ─────────────────────────────────
-    function updateSummary() {
-        const list     = document.getElementById('summary-list');
-        const empty    = document.getElementById('empty-summary');
-        const gtRow    = document.getElementById('grand-total-row');
-        const taxRow   = document.getElementById('tax-info-row');
-        const finalRow = document.getElementById('grand-total-final-row');
-        const subDisp  = document.getElementById('subtotal-display');
-        const taxAmtDisp= document.getElementById('tax-amount-display');
-        const taxPctDisp= document.getElementById('tax-percent-display');
-        const gtDisp   = document.getElementById('grand-total-display');
-        const submitBtn= document.getElementById('submit-btn');
+    // ─── Core Logic (Defensive & Robust) ───────────────
+    function updateSaleSummary() {
+        console.log("SALE_DEBUG: Executing updateSaleSummary");
+        
+        const summaryListContainer = document.getElementById('summary-list');
+        const emptyStateDiv        = document.getElementById('empty-summary');
+        const totalLineRow         = document.getElementById('grand-total-row');
+        const totalValueSpan       = document.getElementById('SALE_GRAND_TOTAL_VALUE');
+        const mainSubmitBtn        = document.getElementById('submit-btn');
 
-        const keys = Object.keys(selectedItems).filter(k => selectedItems[k].qty > 0);
-
-        if (keys.length === 0) {
-            list.innerHTML = '';
-            list.appendChild(empty);
-            empty.style.display = '';
-            gtRow.style.display = 'none';
-            taxRow.style.display = 'none';
-            finalRow.style.display = 'none';
-            submitBtn.disabled = true;
+        if (!summaryListContainer || !totalValueSpan) {
+            console.error("SALE_DEBUG: Critical DOM elements missing.");
             return;
         }
 
-        empty.style.display = 'none';
-        list.innerHTML = '';
+        let calculatedGrandTotal = 0;
+        let selectedItemCount = 0;
+        let listItemsHtml = '';
 
-        let subtotal = 0;
-        keys.forEach(pid => {
-            const it = selectedItems[pid];
-            const lineTotal = it.price * it.qty;
-            subtotal += lineTotal;
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <div>
-                    <div class="osl-name">${it.name}</div>
-                    <div class="osl-sub">${it.qty} × ₹${it.price.toFixed(2)}</div>
-                </div>
-                <div class="osl-total">₹${lineTotal.toFixed(2)}</div>
-            `;
-            list.appendChild(li);
-        });
-
-        const taxAmount = subtotal * (currentTaxPercent / 100);
-        const grandTotal = subtotal + taxAmount;
-
-        gtRow.style.display = 'flex';
-        taxRow.style.display = 'flex';
-        finalRow.style.display = 'flex';
+        // Select all checked products accurately
+        const activeCheckboxes = document.querySelectorAll('.product-checkbox:checked');
         
-        subDisp.textContent = '₹' + subtotal.toFixed(2);
-        taxAmtDisp.textContent = '₹' + taxAmount.toFixed(2);
-        taxPctDisp.textContent = currentTaxPercent;
-        gtDisp.textContent = '₹' + grandTotal.toFixed(2);
-        submitBtn.disabled = false;
+        activeCheckboxes.forEach(cb => {
+            try {
+                const pid = cb.dataset.pid;
+                const row = cb.closest('tr');
+                if (!row) return;
+
+                const name = row.dataset.name || "Unknown Item";
+                const price = parseFloat(row.dataset.price) || 0;
+                
+                const qtyInput = document.getElementById('qty-' + pid);
+                const quantity = qtyInput ? (parseFloat(qtyInput.value) || 0) : 0;
+                
+                const rowSubtotalDisplay = document.getElementById('sub-' + pid);
+                
+                if (quantity > 0) {
+                    const itemSubtotal = price * quantity;
+                    calculatedGrandTotal += itemSubtotal;
+                    selectedItemCount++;
+
+                    // Update Table Row Subtotal
+                    if (rowSubtotalDisplay) {
+                        rowSubtotalDisplay.textContent = '₹' + itemSubtotal.toFixed(2);
+                    }
+
+                    // Build Sidebar Summary
+                    listItemsHtml += `
+                        <li style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                            <div style="flex:1; overflow:hidden;">
+                                <div style="font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
+                                <div style="font-size:11px; color:var(--text-muted);">${quantity} × ₹${price.toFixed(2)}</div>
+                            </div>
+                            <div style="font-weight:800; color:var(--text); margin-left:12px;">₹${itemSubtotal.toFixed(2)}</div>
+                        </li>
+                    `;
+                } else {
+                    if (rowSubtotalDisplay) rowSubtotalDisplay.textContent = '—';
+                }
+            } catch (err) {
+                console.error("SALE_DEBUG: Error processing item:", err);
+            }
+        });
+
+        // Sync with DOM
+        summaryListContainer.innerHTML = listItemsHtml;
+
+        if (selectedItemCount === 0) {
+            if (emptyStateDiv) emptyStateDiv.style.display = 'flex';
+            if (totalLineRow)  totalLineRow.style.display = 'none';
+            if (mainSubmitBtn) mainSubmitBtn.disabled = true;
+            totalValueSpan.textContent = '₹0.00';
+        } else {
+            if (emptyStateDiv) emptyStateDiv.style.display = 'none';
+            if (totalLineRow)  totalLineRow.style.display = 'flex';
+            
+            const displayTotal = '₹' + calculatedGrandTotal.toFixed(2);
+            console.log("SALE_DEBUG: New Grand Total:", displayTotal);
+            totalValueSpan.textContent = displayTotal;
+            
+            if (mainSubmitBtn) mainSubmitBtn.disabled = false;
+        }
     }
 
-    // ─── Product Filter ───────────────────────────────
+    // Filter Logic
     function filterProducts(val) {
-        const q = val.toLowerCase();
+        const query = val.toLowerCase();
         document.querySelectorAll('#product-tbody tr.prod-row').forEach(row => {
-            const search = row.dataset.search || '';
-            row.style.display = search.includes(q) ? '' : 'none';
+            const text = row.dataset.search || "";
+            row.style.display = text.includes(query) ? "" : "none";
         });
     }
+
+    // Global wrappers for HTML event hooks
+    window.onProductToggle = onProductToggle;
+    window.onQtyChange = updateSaleSummary;
+    window.updateSummary = updateSaleSummary;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', updateSaleSummary);
 </script>
 
 <?php include 'includes/footer.php'; ?>

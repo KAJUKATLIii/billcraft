@@ -60,8 +60,8 @@ CREATE TABLE `products` (
   `product_id` int(11) NOT NULL,
   `product_category` varchar(100) NOT NULL,
   `product_name` varchar(100) NOT NULL,
-  `product_cost` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `product_price` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `product_cost` int(11) NOT NULL DEFAULT 0,
+  `product_price` int(11) NOT NULL DEFAULT 0,
   `product_stock` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -77,7 +77,7 @@ CREATE TABLE `vendor` (
   `vendor_phone` varchar(100) NOT NULL,
   `product_id` int(11) DEFAULT NULL,
   `vendor_quantity` int(11) NOT NULL DEFAULT 0,
-  `vendor_price` decimal(15,2) NOT NULL DEFAULT 0.00
+  `vendor_price` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -91,9 +91,7 @@ CREATE TABLE `orders` (
   `type` int(11) NOT NULL COMMENT '0-bought 1-Sold',
   `vendor_id` int(11) DEFAULT NULL,
   `customer_id` int(11) DEFAULT NULL,
-  `total` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `tax_percent` int(11) NOT NULL DEFAULT 0,
-  `tax_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `total` int(11) NOT NULL DEFAULT 0,
   `payment_status` varchar(50) NOT NULL COMMENT 'pending/paid',
   `date` date NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -108,8 +106,7 @@ CREATE TABLE `orders_product` (
   `id` int(11) NOT NULL,
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `price_at_sale` decimal(15,2) NOT NULL DEFAULT 0.00
+  `quantity` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
